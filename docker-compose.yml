@@ -1,0 +1,54 @@
+version: '3.7'
+
+services:
+  minio: 
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    expose:
+      - "9001"
+      - "9000"
+    environment:
+      MINIO_ROOT_USER: $MINIO_ROOT_USER
+      MINIO_ROOT_PASSWORD: $MINIO_ROOT_PASSWORD
+      MINIO_PROMETHEUS_AUTH_TYPE: "public"
+    networks:
+      - proxy
+    container_name: minio
+    volumes:
+      - data1-1:/data
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.s3.entrypoints=http"
+      - "traefik.http.routers.s3.rule=Host(`s3.selfhost.ar`)"
+      - "traefik.http.middlewares.s3-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.s3.middlewares=s3-https-redirect"
+      - "traefik.http.routers.s3-secure.entrypoints=https"
+      - "traefik.http.routers.s3-secure.rule=Host(`s3.selfhost.ar`)"
+      - "traefik.http.routers.s3-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.s3-secure.tls=true"
+      - "traefik.http.routers.s3-secure.service=s3"
+      - "traefik.http.services.s3.loadbalancer.server.port=9001"
+   
+      
+      - "traefik.http.routers.s3-api.entrypoints=http"
+      - "traefik.http.routers.s3-api.rule=Host(`s3-api.selfhost.ar`)"
+      - "traefik.http.middlewares.s3-api-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.s3-api.middlewares=s3-api-https-redirect"
+      - "traefik.http.routers.s3-api-secure.entrypoints=https"
+      - "traefik.http.routers.s3-api-secure.rule=Host(`s3-api.selfhost.ar`)"
+      - "traefik.http.routers.s3-api-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.s3-api-secure.tls=true"
+      - "traefik.http.routers.s3-api-secure.service=s3-api"
+      - "traefik.http.services.s3-api.loadbalancer.server.port=9000"
+      - "traefik.docker.network=proxy"
+
+networks:
+  proxy:
+    external: true
+  
+     
+volumes:
+  data1-1:
+    external: true
+  
